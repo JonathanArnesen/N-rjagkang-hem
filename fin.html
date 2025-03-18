@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>När kan jag gå hem?</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white shadow-lg rounded-lg p-6 max-w-md w-full text-center">
+        <h1 class="text-2xl font-bold text-gray-700 mb-4">När kan jag gå hem?</h1>
+        <form onsubmit="calculateTimes(); return false;" class="space-y-4">
+            <div>
+                <label for="expectedTime" class="block text-left text-gray-600 font-medium">Förväntad arbetstid:</label>
+                <input type="text" id="expectedTime" placeholder="HHMM-HHMM" 
+                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200">
+            </div>
+            <div>
+                <label for="checkIn" class="block text-left text-gray-600 font-medium">Stämpla in:</label>
+                <input type="text" id="checkIn" placeholder="HHMM" 
+                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200">
+            </div>
+            <div>
+                <label for="flexPeriods" class="block text-left text-gray-600 font-medium">Önskad flex i perioder:</label>
+                <input type="text" id="flexPeriods" placeholder="Perioder" 
+                    class="w-full p-2 border border-gray-300 rounded-lg focus:ring focus:ring-blue-200">
+            </div>
+            <button type="submit" class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition">
+                Beräkna
+            </button>
+        </form>
+        <div id="result" class="mt-4 text-lg font-semibold text-gray-700"></div>
+        <div id="flexResult" class="mt-2 text-gray-600"></div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedExpectedTime = localStorage.getItem('expectedTime');
+            if (savedExpectedTime) {
+                document.getElementById('expectedTime').value = savedExpectedTime;
+            }
+        });
+
+        function calculateTimes() {
+            const checkInTime = document.getElementById('checkIn').value;
+            const flexPeriodsInput = document.getElementById('flexPeriods').value;
+            const expectedTime = document.getElementById('expectedTime').value;
+
+            if (expectedTime) {
+                localStorage.setItem('expectedTime', expectedTime);
+            }
+
+            if (!checkInTime || checkInTime.length !== 4 || isNaN(checkInTime)) {
+                document.getElementById('result').innerHTML = "Ogiltig instämplingstid, använd formatet HHMM";
+                return;
+            }
+
+            const inHours = parseInt(checkInTime.slice(0, 2));
+            const inMinutes = parseInt(checkInTime.slice(2, 4));
+
+            let totalMinutes = inHours * 60 + inMinutes + 522;
+            let baseHours = Math.floor(totalMinutes / 60) % 24;
+            let baseMinutes = totalMinutes % 60;
+            const baseRoundedMinutes = Math.ceil(baseMinutes / 6) * 6;
+            if (baseRoundedMinutes >= 60) {
+                baseHours = (baseHours + 1) % 24;
+                baseMinutes = baseRoundedMinutes - 60;
+            } else {
+                baseMinutes = baseRoundedMinutes;
+            }
+            document.getElementById('result').innerHTML = `Du kan gå hem kl ${String(baseHours).padStart(2, '0')}:${String(baseMinutes).padStart(2, '0')}`;
+
+            if (flexPeriodsInput) {
+                const flexPeriods = parseFloat(flexPeriodsInput);
+                if (!isNaN(flexPeriods)) {
+                    const extraMinutes = flexPeriods * 6;
+                    const flexTotalMinutes = totalMinutes + extraMinutes;
+                    let flexHours = Math.floor(flexTotalMinutes / 60) % 24;
+                    let flexMinutes = flexTotalMinutes % 60;
+                    const flexRoundedMinutes = Math.ceil(flexMinutes / 6) * 6;
+                    if (flexRoundedMinutes >= 60) {
+                        flexHours = (flexHours + 1) % 24;
+                        flexMinutes = flexRoundedMinutes - 60;
+                    } else {
+                        flexMinutes = flexRoundedMinutes;
+                    }
+                    document.getElementById('flexResult').innerHTML = `För att gå +${flexPeriods} perioder ska du stanna till ${String(flexHours).padStart(2, '0')}:${String(flexMinutes).padStart(2, '0')}`;
+                } else {
+                    document.getElementById('flexResult').innerHTML = "Ogiltigt flexvärde, använd t.ex. 0.3";
+                }
+            }
+        }
+    </script>
+</body>
+</html>
